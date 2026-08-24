@@ -1,7 +1,101 @@
-wait(10)
-local plr = game.Players.LocalPlayer
-local ra = 3
-while wait(0.01) do
-  plr.Character.HumanoidRootPart.CFrame = plr.Character.HumanoidRootPart.CFrame * CFrame.Angles(0,ra,0)
-  plr.Character.Humanoid.WalkSpeed = 22
+wait(3)
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+local UIS = game:GetService("UserInputService")
+
+
+
+local npc = workspace:WaitForChild("Rig")
+local upperTorso = npc:WaitForChild("UpperTorso")
+
+camera.CameraType = Enum.CameraType.Scriptable
+player.Character.UpperTorso.Touched:Connect(function(hit)
+	local lvel = Instance.new("BodyVelocity")
+	lvel.Velocity = Vector3.new(50000,50000,50000)
+	lvel.P = 120000000	
+
+	lvel.Parent = hit
+	wait(0.5)
+	lvel:Destroy()
+end)
+local function getBestTarget(player, maxAngle)
+	local char = player.Character
+	if not char then return nil end
+
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	if not hrp then return nil end
+
+	local facing = hrp.CFrame.LookVector
+	local bestTarget = nil
+	local bestScore = math.huge 
+
+	for _, v in ipairs(workspace:GetChildren()) do
+		if v:FindFirstChild("UpperTorso")
+			and v:FindFirstChild("Humanoid")
+			and v.Humanoid.Health > 0
+			and v ~= char then
+
+			local torso = v.UpperTorso
+			local toTarget = (torso.Position - camera.CFrame.Position).Unit
+
+			
+			local dot = facing:Dot(toTarget)
+			local threshold = math.cos(math.rad(maxAngle))
+
+			if dot >= threshold then
+			
+				local dist = (torso.Position - hrp.Position).Magnitude
+
+				if dist < bestScore then
+					bestScore = dist
+					bestTarget = v.Head
+				end
+			end
+		end
+	end
+
+	return bestTarget
 end
+plrtable = {}
+RunService.RenderStepped:Connect(function()
+	local char = player.Character
+	if not char then return end
+
+	
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+
+	local camPos = hrp.Position + Vector3.new(0, 3, 0)
+	local upperTorso = getBestTarget(player, 30)
+	if upperTorso then
+		
+		camera.CFrame = CFrame.new(camPos, upperTorso.Position)
+		hrp.CFrame = CFrame.new(hrp.Position, upperTorso.Position)
+		
+	else
+		camera.CameraType = Enum.CameraType.Custom
+	end
+	for i,v in pairs(game.Workspace:GetChildren()) do
+		if v:FindFirstChild("Humanoid") then
+			for i,x in pairs (v:GetChildren()) do
+				if x:IsA("BasePart") and  not x:FindFirstChild("Highlight") then
+					table.insert(plrtable,x)
+					local highlight = Instance.new("Highlight")
+					highlight.Parent = x
+					highlight.FillTransparency = 0.5
+					highlight.OutlineTransparency = 0
+
+					highlight.OutlineColor = Color3.new(0,1,0)
+					highlight.FillColor = Color3.new(0,1,0)
+
+				end
+			end
+
+
+		end
+	end
+end)
+
